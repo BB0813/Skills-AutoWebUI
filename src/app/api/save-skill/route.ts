@@ -5,7 +5,7 @@ import archiver from 'archiver';
 
 const OUTPUT_DIR = path.join(process.cwd(), 'output');
 
-export async function POST(request: Request) {
+export async function POST(request: Request): Promise<NextResponse> {
   try {
     const { filename, content } = await request.json();
     
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       // Finalize the archive (ie we are done appending files but streams have to finish yet)
       await archive.finalize();
 
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         output.on('close', function() {
           // Return the filename instead of absolute path for client-side download link
           resolve(NextResponse.json({ success: true, filename: safeFilename }));
