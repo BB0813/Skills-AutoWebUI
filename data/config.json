@@ -1,0 +1,13 @@
+{
+  "providers": [
+    {
+      "id": "d4209eb5-4cd0-40b4-8c80-0d6fac6436ec",
+      "name": "Text",
+      "type": "newapi",
+      "baseUrl": "https://ai.amethyst.ltd/v1",
+      "apiKey": "sk-DVh6kvFvwsF1MRMOOQbxqhG7qFuphvey4M3OZ3rNpyh0fNls",
+      "model": "minimax-m2.1"
+    }
+  ],
+  "activeProvider": "d4209eb5-4cd0-40b4-8c80-0d6fac6436ec"
+}

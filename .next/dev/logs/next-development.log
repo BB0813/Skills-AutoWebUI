@@ -1,0 +1,41 @@
+[00:00:03.540] Server  LOG     ✓ Ready in 2.1s
+[00:00:07.224] Server  LOG     ○ Compiling /generator ...
+[00:00:12.701] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:20.268] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:01:34.159] Server  LOG     ✓ Compiled in 610ms
+[00:02:50.259] Server  LOG     ✓ Compiled in 1164ms
+[00:05:07.932] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:07:50.329] Server  LOG     ✓ Compiled in 515ms
+[00:08:19.487] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:12:15.624] Server  LOG     ✓ Compiled in 422ms
+[00:13:49.081] Server  LOG     ✓ Compiled in 1516ms
+[00:16:09.177] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:17:39.960] Server  LOG     ✓ Compiled in 4.3s
+[00:20:27.685] Server  LOG     Calling https://ai.amethyst.ltd/v1/chat/completions with model minimax-m2.1
+[00:22:41.515] Server  WARN    ⚠ Fast Refresh had to perform a full reload when ./src/lib/i18n/dictionaries.ts changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[00:22:41.518] Server  WARN    ⚠ Fast Refresh had to perform a full reload when ./src/lib/i18n/dictionaries.ts changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[00:22:41.538] Server  LOG     ✓ Compiled in 9ms
+[00:22:44.227] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:22:46.049] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:23:46.729] Server  LOG     ✓ Compiled in 351ms
+[00:31:27.486] Server  LOG     ✓ Compiled in 258ms
+[00:33:18.382] Server  LOG     Calling https://ai.amethyst.ltd/v1/chat/completions with model minimax-m2.1
+[00:33:32.050] Server  LOG     Calling https://ai.amethyst.ltd/v1/chat/completions with model minimax-m2.1
+[00:35:59.950] Server  LOG     ✓ Compiled in 4.3s
+[00:36:14.044] Server  LOG     ✓ Compiled in 10ms
+[00:37:22.808] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:37:28.127] Server  LOG     Calling https://ai.amethyst.ltd/v1/chat/completions with model minimax-m2.1
+[00:40:12.369] Server  WARN    ⚠ Fast Refresh had to perform a full reload when ./src/lib/i18n/dictionaries.ts changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[00:40:12.391] Server  LOG     ✓ Compiled in 9ms
+[00:40:13.753] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:40:21.022] Server  WARN    ⚠ Fast Refresh had to perform a full reload when ./src/lib/i18n/dictionaries.ts changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[00:40:21.621] Server  LOG     ✓ Compiled in 13ms
+[00:40:21.853] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:40:32.979] Server  LOG     ✓ Compiled in 184ms
+[00:40:44.412] Server  LOG     ✓ Compiled in 279ms
+[00:42:06.511] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:44:48.791] Server  LOG     Calling https://ai.amethyst.ltd/v1/chat/completions with model minimax-m2.1
+[00:44:58.125] Server  LOG     Calling https://ai.amethyst.ltd/v1/chat/completions with model minimax-m2.1
+[00:50:58.537] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:51:17.599] Server  LOG     ✓ Compiled in 1395ms
+[00:51:40.493] Server  LOG     ✓ Compiled in 1715ms
