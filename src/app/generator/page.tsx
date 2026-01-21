@@ -116,32 +116,48 @@ export default function GeneratorPage() {
     }
   };
 
-  const save = async () => {
+  const downloadFile = async () => {
     if (!generatedContent) return;
-    setSaving(true);
-    try {
-      const res = await fetch("/api/save-skill", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename, content: generatedContent }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setSavedFilename(data.filename);
-        alert(t.generator.output.saved + data.filename);
-      } else {
-        alert("Save failed");
-      }
-    } catch (e) {
-      alert("Save failed");
-    } finally {
-      setSaving(false);
+    
+    // For ZIP files (Trae), we need to ask the server to package it
+    if (filename.endsWith('.zip')) {
+        setSaving(true);
+        try {
+            const res = await fetch("/api/save-skill", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ filename, content: generatedContent }),
+            });
+            
+            if (!res.ok) throw new Error("Packaging failed");
+            
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+        } catch (e) {
+            alert("Download failed");
+        } finally {
+            setSaving(false);
+        }
+    } else {
+        // For text files, download directly from client
+        const blob = new Blob([generatedContent], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
     }
-  };
-
-  const downloadFile = () => {
-    if (!savedFilename) return;
-    window.location.href = `/api/download?file=${encodeURIComponent(savedFilename)}`;
   };
 
   return (
@@ -287,24 +303,13 @@ export default function GeneratorPage() {
               {/* Action Bar */}
               <div className="p-6 border-t border-border/50 bg-white/20 dark:bg-black/20 flex gap-4">
                 <button
-                  onClick={save}
+                  onClick={downloadFile}
                   disabled={saving || !generatedContent}
                   className="glass-button w-full flex-1 flex items-center justify-center gap-2 py-3 disabled:opacity-50 hover:bg-white/40 dark:hover:bg-white/10"
                 >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  {saving ? t.generator.output.saving : t.generator.output.saveButton}
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  {saving ? "Packaging..." : "Download File"}
                 </button>
-
-                {savedFilename && (
-                  <button
-                    onClick={downloadFile}
-                    className="glass-button-primary flex-none px-6 flex items-center justify-center gap-2 py-3 animate-apple-fade-in"
-                    title="Download File"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download
-                  </button>
-                )}
               </div>
             </div>
           </div>

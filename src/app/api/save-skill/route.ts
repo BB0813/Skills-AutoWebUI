@@ -1,69 +1,48 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 import archiver from 'archiver';
-
-const OUTPUT_DIR = path.join(process.cwd(), 'output');
+import { PassThrough } from 'stream';
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     const { filename, content } = await request.json();
-    
-    if (!fs.existsSync(OUTPUT_DIR)) {
-      fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-    }
-
-    const safeFilename = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_');
-    const filePath = path.join(OUTPUT_DIR, safeFilename);
+    const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
 
     if (safeFilename.endsWith('.zip')) {
       // Handle Zip creation for Trae
       const skillName = safeFilename.replace('.zip', '');
-      const output = fs.createWriteStream(filePath);
+      
+      const passThrough = new PassThrough();
       const archive = archiver('zip', {
-        zlib: { level: 9 } // Sets the compression level.
+        zlib: { level: 9 }
       });
 
-      // Good practice to catch warnings (ie stat failures and other non-blocking errors)
-      archive.on('warning', function(err) {
-        if (err.code === 'ENOENT') {
-          console.warn(err);
-        } else {
-          throw err;
-        }
-      });
-
-      // Good practice to catch this error explicitly
-      archive.on('error', function(err) {
-        throw err;
-      });
-
-      // Pipe archive data to the file
-      archive.pipe(output);
-
-      // append content from string, using a name like 'skill-name/SKILL.md'
-      // The user requested structure: skill-name/SKILL.md
+      archive.pipe(passThrough);
       archive.append(content, { name: `${skillName}/SKILL.md` });
-
-      // Finalize the archive (ie we are done appending files but streams have to finish yet)
       await archive.finalize();
 
-      return new Promise((resolve) => {
-        output.on('close', function() {
-          // Return the filename instead of absolute path for client-side download link
-          resolve(NextResponse.json({ success: true, filename: safeFilename }));
-        });
-        output.on('error', function(err) {
-           console.error("Zip Write Error:", err);
-           resolve(NextResponse.json({ error: 'Zip creation failed' }, { status: 500 }));
-        });
+      // Convert stream to buffer (Vercel Edge/Serverless friendly)
+      const chunks = [];
+      for await (const chunk of passThrough) {
+        chunks.push(chunk);
+      }
+      const buffer = Buffer.concat(chunks);
+
+      return new NextResponse(buffer, {
+        headers: {
+          'Content-Type': 'application/zip',
+          'Content-Disposition': `attachment; filename="${safeFilename}"`,
+        },
       });
 
     } else {
-      // Normal file save
-      fs.writeFileSync(filePath, content);
-      // Return the filename instead of absolute path
-      return NextResponse.json({ success: true, filename: safeFilename });
+        // Should not be reached for text files if frontend handles them, 
+        // but as a fallback, return the content as a file
+        return new NextResponse(content, {
+            headers: {
+                'Content-Type': 'text/plain',
+                'Content-Disposition': `attachment; filename="${safeFilename}"`,
+            }
+        });
     }
 
   } catch (error) {
