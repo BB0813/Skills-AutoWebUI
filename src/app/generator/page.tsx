@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Save, Copy, Loader2, Code, Terminal, Monitor, Download } from "lucide-react";
+import { ArrowLeft, Sparkles, Save, Copy, Loader2, Code, Terminal, Monitor, Download, Settings } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/context";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { SupportedIDE, IDE_CONFIG } from "@/lib/types";
+import { SupportedIDE, IDE_CONFIG, Config } from "@/lib/types";
+import { constructSystemPrompt, cleanLLMResponse } from "@/lib/prompts";
 
 export default function GeneratorPage() {
   const { t } = useTranslation();
@@ -17,32 +18,99 @@ export default function GeneratorPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedFilename, setSavedFilename] = useState<string | null>(null);
+  const [config, setConfig] = useState<Config | null>(null);
+
+  useEffect(() => {
+    // Load config from localStorage
+    const savedConfig = localStorage.getItem("skills-auto-webui-config");
+    if (savedConfig) {
+      try {
+        setConfig(JSON.parse(savedConfig));
+      } catch (e) {
+        console.error("Failed to parse config", e);
+      }
+    }
+  }, []);
+
+  const hasActiveProvider = config && config.activeProvider && config.providers.find(p => p.id === config.activeProvider);
 
   const generate = async () => {
     if (!prompt) return;
+    
+    // Check if we have a valid provider
+    if (!hasActiveProvider) {
+        alert(t.settings.noProviders); 
+        return;
+    }
+
+    const activeProvider = config!.providers.find(p => p.id === config!.activeProvider);
+    const ideSettings = IDE_CONFIG[selectedIDE];
+
     setLoading(true);
-    setSavedFilename(null); // Reset saved file state on new generation
+    setSavedFilename(null); 
     try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, ide: selectedIDE, skillName }),
-      });
-      const data = await res.json();
-      if (data.error) {
-        alert(data.error);
-      } else {
-        setGeneratedContent(data.content);
-        if (data.extension) {
-            let base = filename.substring(0, filename.lastIndexOf('.')) || "skill";
-            if (skillName) {
-                base = skillName.replace(/[^a-zA-Z0-9._-]/g, '_');
-            }
-            setFilename(`${base}${data.extension}`);
+      let content = "";
+      
+      if (config?.clientSideRequest) {
+        // Client-side generation
+        const systemPrompt = constructSystemPrompt(selectedIDE, skillName);
+        const baseUrl = activeProvider!.baseUrl.replace(/\/$/, '');
+        const url = `${baseUrl}/chat/completions`;
+        
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${activeProvider!.apiKey}`
+            },
+            body: JSON.stringify({
+                model: activeProvider!.model,
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: prompt }
+                ]
+            })
+        });
+
+        if (!res.ok) {
+            const errText = await res.text();
+            throw new Error(`Provider Error: ${res.status} ${errText}`);
         }
+
+        const data = await res.json();
+        content = data.choices[0].message.content;
+        content = cleanLLMResponse(content);
+        
+      } else {
+        // Server-side generation (via /api/generate)
+        const res = await fetch("/api/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                prompt, 
+                ide: selectedIDE, 
+                skillName,
+                providerConfig: activeProvider // Pass provider config to backend
+            }),
+        });
+        const data = await res.json();
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        content = data.content;
       }
-    } catch (e) {
-      alert("Generation failed");
+
+      setGeneratedContent(content);
+      if (ideSettings.extension) {
+        let base = filename.substring(0, filename.lastIndexOf('.')) || "skill";
+        if (skillName) {
+            base = skillName.replace(/[^a-zA-Z0-9._-]/g, '_');
+        }
+        setFilename(`${base}${ideSettings.extension}`);
+      }
+      
+    } catch (e: any) {
+      alert(e.message || "Generation failed");
     } finally {
       setLoading(false);
     }
@@ -98,6 +166,18 @@ export default function GeneratorPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[calc(100vh-180px)] min-h-[600px]">
           {/* Input Section */}
           <div className="flex flex-col gap-4 animate-apple-fade-in [animation-delay:0.1s]">
+            {!hasActiveProvider && config !== null && (
+              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-center justify-between text-yellow-600 dark:text-yellow-400">
+                <div className="flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  <span className="text-sm font-medium">{t.settings.noProviders}</span>
+                </div>
+                <Link href="/settings" className="text-sm underline hover:opacity-80">
+                  {t.settings.addProvider}
+                </Link>
+              </div>
+            )}
+
             <div className="glass-card flex-1 flex flex-col p-6 space-y-6 relative group border-accent/10">
               
               <div className="flex items-center justify-between">

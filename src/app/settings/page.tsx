@@ -2,10 +2,19 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Trash2, Check, Save, Loader2, Server } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Check, Save, Loader2, Server, Globe, Zap, Shield, Laptop } from "lucide-react";
 import { Config, Provider, ProviderType } from "@/lib/types";
 import { useTranslation } from "@/lib/i18n/context";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+
+const PROVIDER_PRESETS = [
+  { name: "OpenAI", type: "openai", baseUrl: "https://api.openai.com/v1", model: "gpt-4o" },
+  { name: "SiliconFlow (DeepSeek)", type: "openai", baseUrl: "https://api.siliconflow.cn/v1", model: "deepseek-ai/DeepSeek-V3" },
+  { name: "Gemini (OpenAI Compatible)", type: "openai", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai", model: "gemini-1.5-flash" },
+  { name: "DeepSeek Official", type: "openai", baseUrl: "https://api.deepseek.com", model: "deepseek-chat" },
+  { name: "Moonshot (Kimi)", type: "openai", baseUrl: "https://api.moonshot.cn/v1", model: "moonshot-v1-8k" },
+  { name: "OpenRouter", type: "openai", baseUrl: "https://openrouter.ai/api/v1", model: "anthropic/claude-3.5-sonnet" },
+];
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -15,26 +24,28 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch("/api/config")
-      .then((res) => res.json())
-      .then((data) => {
-        setConfig(data);
-        setLoading(false);
-      });
+    // Load config from localStorage on client side
+    const savedConfig = localStorage.getItem("skills-auto-webui-config");
+    if (savedConfig) {
+      try {
+        setConfig(JSON.parse(savedConfig));
+      } catch (e) {
+        console.error("Failed to parse config from localStorage", e);
+      }
+    }
+    setLoading(false);
   }, []);
 
   const saveConfig = async (newConfig: Config) => {
     setSaving(true);
     try {
-      const res = await fetch("/api/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newConfig),
-      });
-      if (res.ok) {
-        setConfig(newConfig);
-        setIsDirty(false);
-      }
+      // Save to localStorage
+      localStorage.setItem("skills-auto-webui-config", JSON.stringify(newConfig));
+      setConfig(newConfig);
+      setIsDirty(false);
+      
+      // Simulate network delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 500));
     } catch (error) {
       console.error("Failed to save config", error);
     } finally {
@@ -42,14 +53,14 @@ export default function SettingsPage() {
     }
   };
 
-  const addProvider = () => {
+  const addProvider = (preset?: typeof PROVIDER_PRESETS[0]) => {
     const newProvider: Provider = {
       id: crypto.randomUUID(),
-      name: "New Provider",
-      type: "openai",
-      baseUrl: "https://api.openai.com/v1",
+      name: preset?.name || "New Provider",
+      type: (preset?.type as ProviderType) || "openai",
+      baseUrl: preset?.baseUrl || "https://api.openai.com/v1",
       apiKey: "",
-      model: "gpt-4o",
+      model: preset?.model || "gpt-4o",
     };
     const newConfig = {
       ...config,
@@ -81,6 +92,12 @@ export default function SettingsPage() {
 
   const setActiveProvider = (id: string) => {
     const newConfig = { ...config, activeProvider: id };
+    setConfig(newConfig);
+    setIsDirty(true);
+  };
+
+  const toggleClientSideRequest = () => {
+    const newConfig = { ...config, clientSideRequest: !config.clientSideRequest };
     setConfig(newConfig);
     setIsDirty(true);
   };
@@ -126,16 +143,73 @@ export default function SettingsPage() {
         </div>
 
         <div className="space-y-6 animate-apple-fade-in [animation-delay:0.1s]">
+          {/* Advanced Settings */}
+          <section className="space-y-4">
+            <h2 className="text-apple-title flex items-center gap-2 px-2">
+                <Shield className="w-5 h-5 text-accent" />
+                Advanced
+            </h2>
+            <div className="glass-card flex items-center justify-between p-6">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2 font-medium">
+                        <Laptop className="w-4 h-4 text-muted-foreground" />
+                        Client-Side Request Mode
+                    </div>
+                    <p className="text-sm text-muted-foreground max-w-lg">
+                        Enable this if you are experiencing timeouts on Vercel or IP blocking. 
+                        Requests will be made directly from your browser to the API provider. 
+                        <br/>
+                        <span className="text-yellow-600 dark:text-yellow-400 text-xs">
+                            Requires API provider to support CORS.
+                        </span>
+                    </p>
+                </div>
+                <button
+                    onClick={toggleClientSideRequest}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+                        config.clientSideRequest ? "bg-accent" : "bg-muted-foreground/30"
+                    }`}
+                >
+                    <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            config.clientSideRequest ? "translate-x-6" : "translate-x-1"
+                        }`}
+                    />
+                </button>
+            </div>
+          </section>
+
           <section className="space-y-4">
             <div className="flex items-center justify-between px-2">
               <h2 className="text-apple-title flex items-center gap-2">
                 <Server className="w-5 h-5 text-accent" />
                 {t.settings.providers}
               </h2>
-              <button onClick={addProvider} className="glass-button flex items-center gap-2 text-sm text-accent hover:text-accent-foreground">
-                <Plus className="w-4 h-4" />
-                {t.settings.addProvider}
-              </button>
+              <div className="flex items-center gap-2">
+                <div className="relative group">
+                   <button className="glass-button flex items-center gap-2 text-sm text-accent hover:text-accent-foreground">
+                    <Zap className="w-4 h-4" />
+                    <span>Presets</span>
+                  </button>
+                  <div className="absolute right-0 top-full mt-2 w-56 p-2 glass-card bg-white/90 dark:bg-black/90 backdrop-blur-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-xl">
+                    <div className="text-xs font-semibold text-muted-foreground px-2 py-1 mb-1 uppercase tracking-wider">Quick Add</div>
+                    {PROVIDER_PRESETS.map((preset) => (
+                      <button
+                        key={preset.name}
+                        onClick={() => addProvider(preset)}
+                        className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-accent/10 hover:text-accent transition-colors flex items-center gap-2"
+                      >
+                        <Globe className="w-3 h-3" />
+                        {preset.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button onClick={() => addProvider()} className="glass-button flex items-center gap-2 text-sm text-accent hover:text-accent-foreground">
+                  <Plus className="w-4 h-4" />
+                  {t.settings.addProvider}
+                </button>
+              </div>
             </div>
 
             <div className="grid gap-6">
@@ -261,7 +335,7 @@ export default function SettingsPage() {
                   <p className="text-muted-foreground max-w-sm">
                     {t.settings.noProviders}
                   </p>
-                  <button onClick={addProvider} className="glass-button-primary">
+                  <button onClick={() => addProvider()} className="glass-button-primary">
                     {t.settings.addProvider}
                   </button>
                 </div>

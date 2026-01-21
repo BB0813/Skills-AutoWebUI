@@ -20,7 +20,11 @@
   - Light/Dark mode support (fully independent of system settings).
   - Glassmorphism effects with refined legibility.
 - **🌍 Internationalization**: Complete support for English and Chinese (Simplified).
-- **⚙️ Flexible Configuration**: Support for OpenAI, NewAPI, OpenWebUI, and custom LLM providers.
+- **⚙️ Flexible Configuration**:
+  - **Client-Side Storage**: API keys are stored securely in your browser's LocalStorage (stateless backend).
+  - **Presets**: One-click setup for OpenAI, Gemini, SiliconFlow (DeepSeek), Moonshot (Kimi), and more.
+  - **Client-Side Mode**: Toggle "Client-Side Request" in advanced settings to bypass Vercel timeouts/IP blocks by calling APIs directly from your browser.
+  - **Custom Providers**: Support for any OpenAI-compatible API.
 - **⬇️ Instant Download**: One-click download for generated files, including automatic ZIP packaging for Trae.
 
 ## 🚀 Getting Started

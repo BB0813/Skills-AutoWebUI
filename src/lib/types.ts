@@ -12,6 +12,7 @@ export interface Provider {
 export interface Config {
   providers: Provider[];
   activeProvider: string | null;
+  clientSideRequest?: boolean;
 }
 
 export type SupportedIDE = "cursor" | "vscode" | "trae" | "windsurf";
