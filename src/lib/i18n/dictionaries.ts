@@ -56,6 +56,14 @@ export const en = {
       saved: "Saved to output/",
     },
   },
+  ide: {
+    cursor: "Cursor",
+    vscode: "VS Code",
+    trae: "Trae",
+    windsurf: "Windsurf",
+    "claude-code": "Claude Code",
+    "codex-cli": "Codex CLI",
+  },
 };
 
 export const zh = {
@@ -84,7 +92,7 @@ export const zh = {
     title: "设置",
     providers: "LLM 提供商",
     addProvider: "添加提供商",
-    noProviders: "暂无配置。点击“添加提供商”开始使用。",
+    noProviders: "暂无配置。点击\"添加提供商\"开始使用。",
     fields: {
       name: "名称",
       type: "类型",
@@ -115,5 +123,13 @@ export const zh = {
       saving: "保存中...",
       saved: "已保存至 output/",
     },
+  },
+  ide: {
+    cursor: "Cursor",
+    vscode: "VS Code",
+    trae: "Trae",
+    windsurf: "Windsurf",
+    "claude-code": "Claude Code",
+    "codex-cli": "Codex CLI",
   },
 };

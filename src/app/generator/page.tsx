@@ -29,6 +29,22 @@ export default function GeneratorPage() {
       } catch (e) {
         console.error("Failed to parse config", e);
       }
+    } else {
+      // Initialize with default Zhipu provider if no config exists
+      const providerId = crypto.randomUUID();
+      const defaultConfig: Config = {
+        providers: [{
+          id: providerId,
+          name: "智谱AI (Zhipu)",
+          type: "openai",
+          baseUrl: "https://open.bigmodel.cn/api/paas/v4",
+          apiKey: "d7818e4ba08745c9be2f1d499f1fe7a8.aDTQoKJ1LVzhXJgO",
+          model: "glm-4-flash",
+        }],
+        activeProvider: providerId,
+      };
+      setConfig(defaultConfig);
+      localStorage.setItem("skills-auto-webui-config", JSON.stringify(defaultConfig));
     }
   }, []);
 

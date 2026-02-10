@@ -9,12 +9,20 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const PROVIDER_PRESETS = [
   { name: "OpenAI", type: "openai", baseUrl: "https://api.openai.com/v1", model: "gpt-4o" },
+  { name: "智谱AI (Zhipu)", type: "openai", baseUrl: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4-flash" },
   { name: "SiliconFlow (DeepSeek)", type: "openai", baseUrl: "https://api.siliconflow.cn/v1", model: "deepseek-ai/DeepSeek-V3" },
   { name: "Gemini (OpenAI Compatible)", type: "openai", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai", model: "gemini-1.5-flash" },
   { name: "DeepSeek Official", type: "openai", baseUrl: "https://api.deepseek.com", model: "deepseek-chat" },
   { name: "Moonshot (Kimi)", type: "openai", baseUrl: "https://api.moonshot.cn/v1", model: "moonshot-v1-8k" },
-  { name: "OpenRouter", type: "openai", baseUrl: "https://openrouter.ai/api/v1", model: "anthropic/claude-3.5-sonnet" },
+  { name: "OpenRouter (Claude)", type: "openai", baseUrl: "https://openrouter.ai/api/v1", model: "anthropic/claude-3.5-sonnet" },
+  { name: "OpenRouter (CodeX)", type: "openai", baseUrl: "https://openrouter.ai/api/v1", model: "openai/codex" },
+  { name: "OpenRouter (GPT-4)", type: "openai", baseUrl: "https://openrouter.ai/api/v1", model: "openai/gpt-4-turbo" },
+  { name: "OpenRouter (DeepSeek)", type: "openai", baseUrl: "https://openrouter.ai/api/v1", model: "deepseek/deepseek-chat" },
+  { name: "OpenRouter (Claude 3.5 Sonnet)", type: "openai", baseUrl: "https://openrouter.ai/api/v1", model: "anthropic/claude-3.5-sonnet:beta" },
+  { name: "OpenRouter (Claude 3 Opus)", type: "openai", baseUrl: "https://openrouter.ai/api/v1", model: "anthropic/claude-3-opus" },
 ];
+
+const DEFAULT_ZHIPU_API_KEY = "d7818e4ba08745c9be2f1d499f1fe7a8.aDTQoKJ1LVzhXJgO";
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -32,6 +40,22 @@ export default function SettingsPage() {
       } catch (e) {
         console.error("Failed to parse config from localStorage", e);
       }
+    } else {
+      // Initialize with default Zhipu provider if no config exists
+      const providerId = crypto.randomUUID();
+      const defaultConfig: Config = {
+        providers: [{
+          id: providerId,
+          name: "智谱AI (Zhipu)",
+          type: "openai",
+          baseUrl: "https://open.bigmodel.cn/api/paas/v4",
+          apiKey: DEFAULT_ZHIPU_API_KEY,
+          model: "glm-4-flash",
+        }],
+        activeProvider: providerId,
+      };
+      setConfig(defaultConfig);
+      localStorage.setItem("skills-auto-webui-config", JSON.stringify(defaultConfig));
     }
     setLoading(false);
   }, []);
@@ -307,6 +331,17 @@ export default function SettingsPage() {
                           onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value })}
                           className="glass-input w-full font-mono text-sm"
                           placeholder="sk-..."
+                          onCopy={(e) => {
+                            if (provider.name === "智谱AI (Zhipu)" && provider.apiKey === DEFAULT_ZHIPU_API_KEY) {
+                              e.preventDefault();
+                            }
+                          }}
+                          onCut={(e) => {
+                            if (provider.name === "智谱AI (Zhipu)" && provider.apiKey === DEFAULT_ZHIPU_API_KEY) {
+                              e.preventDefault();
+                            }
+                          }}
+                          readOnly={provider.name === "智谱AI (Zhipu)" && provider.apiKey === DEFAULT_ZHIPU_API_KEY}
                         />
                       </div>
 

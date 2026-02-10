@@ -67,6 +67,40 @@ export function constructSystemPrompt(targetIDE: SupportedIDE, skillName: string
         For Windsurf, generate a standard markdown rule file (.md).
         Focus on providing clear context and rules for the agent.
         `;
+    } else if (targetIDE === 'claude-code' || targetIDE === 'codex-cli') {
+        systemPrompt += `
+        For ${ideSettings.name}, you MUST generate a standard Agent Skill file (SKILL.md) following the Anthropic Agent Skills open standard.
+        
+        STRICT FILE STRUCTURE:
+        
+        ---
+        name: ${finalSkillName}
+        description: [A clear, concise description of what this skill does and when to use it]
+        ---
+
+        # [Skill Name]
+
+        [Detailed instructions and context for the Agent]
+
+        ## Instructions
+        1. Step-by-step logic for the agent to follow.
+        2. ...
+
+        ## Examples
+        - **User**: [Example input]
+          **Agent**: [Example behavior/output]
+
+        ## Guidelines
+        - [Constraint or Best Practice 1]
+        - [Constraint or Best Practice 2]
+        
+        REQUIREMENTS:
+        - The 'name' in frontmatter MUST be kebab-case (e.g., 'code-review-helper').
+        - The 'description' MUST be informative and describe when to use this skill.
+        - Use H2 (##) for sections.
+        - The content should be instructional for an AI agent, not for a human. Tell agent HOW to think and act.
+        - Follow the Anthropic Agent Skills open standard specification.
+        `;
     }
 
     return systemPrompt;
