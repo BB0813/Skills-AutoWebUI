@@ -27,7 +27,7 @@ export async function GET() {
   try {
     const config = ensureConfig();
     return NextResponse.json(config);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to read config' }, { status: 500 });
   }
 }
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     }
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(body, null, 2));
     return NextResponse.json({ success: true, config: body });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to save config' }, { status: 500 });
   }
 }

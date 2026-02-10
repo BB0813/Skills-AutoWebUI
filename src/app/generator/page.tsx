@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Save, Copy, Loader2, Code, Terminal, Monitor, Download, Settings } from "lucide-react";
+import { ArrowLeft, Sparkles, Copy, Loader2, Code, Terminal, Monitor, Download, Settings } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/context";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { SupportedIDE, IDE_CONFIG, Config } from "@/lib/types";
@@ -17,7 +17,6 @@ export default function GeneratorPage() {
   const [filename, setFilename] = useState("skill.code-snippets");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [savedFilename, setSavedFilename] = useState<string | null>(null);
   const [config, setConfig] = useState<Config | null>(null);
 
   useEffect(() => {
@@ -63,7 +62,6 @@ export default function GeneratorPage() {
     const ideSettings = IDE_CONFIG[selectedIDE];
 
     setLoading(true);
-    setSavedFilename(null); 
     try {
       let content = "";
       
@@ -125,8 +123,8 @@ export default function GeneratorPage() {
         setFilename(`${base}${ideSettings.extension}`);
       }
       
-    } catch (e: any) {
-      alert(e.message || "Generation failed");
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Generation failed");
     } finally {
       setLoading(false);
     }
@@ -157,7 +155,7 @@ export default function GeneratorPage() {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
             
-        } catch (e) {
+        } catch {
             alert("Download failed");
         } finally {
             setSaving(false);

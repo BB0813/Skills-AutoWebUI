@@ -2,15 +2,12 @@
 
 import { useTranslation } from "@/lib/i18n/context";
 import { Languages } from "lucide-react";
-import { useState } from "react";
 
 export default function LanguageSwitcher() {
   const { language, setLanguage } = useTranslation();
-  const [isOpen, setIsOpen] = useState(false);
 
   const toggleLanguage = () => {
     setLanguage(language === "en" ? "zh" : "en");
-    setIsOpen(false);
   };
 
   return (
