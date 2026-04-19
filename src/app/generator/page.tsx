@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Copy, Loader2, Code, Terminal, Monitor, Download, Settings } from "lucide-react";
+import { ArrowLeft, Sparkles, Copy, Loader2, Monitor, Download, Settings } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/context";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { SupportedIDE, IDE_CONFIG, Config } from "@/lib/types";
-import { constructSystemPrompt, cleanLLMResponse } from "@/lib/prompts";
 
 export default function GeneratorPage() {
   const { t } = useTranslation();
@@ -77,8 +76,8 @@ export default function GeneratorPage() {
         }
         
         setGeneratedContents(newContents);
-    } catch (e: any) {
-        alert(e.message);
+    } catch (e: unknown) {
+        alert(e instanceof Error ? e.message : "Generation failed");
     } finally {
         setLoading(false);
     }
