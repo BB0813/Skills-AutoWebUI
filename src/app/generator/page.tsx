@@ -12,15 +12,13 @@ export default function GeneratorPage() {
   const { t } = useTranslation();
   const [prompt, setPrompt] = useState("");
   const [skillName, setSkillName] = useState("");
+  const [generatedContents, setGeneratedContents] = useState<Record<string, string>>({});
   const [selectedIDE, setSelectedIDE] = useState<SupportedIDE>("vscode");
-  const [generatedContent, setGeneratedContent] = useState("");
-  const [filename, setFilename] = useState("skill.code-snippets");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<Config | null>(null);
 
   useEffect(() => {
-    // Load config from localStorage
     const savedConfig = localStorage.getItem("skills-auto-webui-config");
     if (savedConfig) {
       try {
@@ -29,7 +27,6 @@ export default function GeneratorPage() {
         console.error("Failed to parse config", e);
       }
     } else {
-      // Initialize with default Zhipu provider if no config exists
       const providerId = crypto.randomUUID();
       const defaultConfig: Config = {
         providers: [{
@@ -49,98 +46,59 @@ export default function GeneratorPage() {
 
   const hasActiveProvider = config && config.activeProvider && config.providers.find(p => p.id === config.activeProvider);
 
-  const generate = async () => {
+  const generateAll = async () => {
     if (!prompt) return;
-    
-    // Check if we have a valid provider
     if (!hasActiveProvider) {
         alert(t.settings.noProviders); 
         return;
     }
 
-    const activeProvider = config!.providers.find(p => p.id === config!.activeProvider);
-    const ideSettings = IDE_CONFIG[selectedIDE];
-
     setLoading(true);
+    const newContents: Record<string, string> = {};
+    
     try {
-      let content = "";
-      
-      if (config?.clientSideRequest) {
-        // Client-side generation
-        const systemPrompt = constructSystemPrompt(selectedIDE, skillName);
-        const baseUrl = activeProvider!.baseUrl.replace(/\/$/, '');
-        const url = `${baseUrl}/chat/completions`;
+        const activeProvider = config!.providers.find(p => p.id === config!.activeProvider);
+        const ideList = Object.keys(IDE_CONFIG) as SupportedIDE[];
         
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${activeProvider!.apiKey}`
-            },
-            body: JSON.stringify({
-                model: activeProvider!.model,
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: prompt }
-                ]
-            })
-        });
-
-        if (!res.ok) {
-            const errText = await res.text();
-            throw new Error(`Provider Error: ${res.status} ${errText}`);
+        for (const ide of ideList) {
+            const res = await fetch("/api/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    prompt, 
+                    ide, 
+                    skillName,
+                    providerConfig: activeProvider 
+                }),
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(`Error generating for ${ide}: ${data.error}`);
+            newContents[ide] = data.content;
         }
-
-        const data = await res.json();
-        content = data.choices[0].message.content;
-        content = cleanLLMResponse(content);
         
-      } else {
-        // Server-side generation (via /api/generate)
-        const res = await fetch("/api/generate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                prompt, 
-                ide: selectedIDE, 
-                skillName,
-                providerConfig: activeProvider // Pass provider config to backend
-            }),
-        });
-        const data = await res.json();
-        if (data.error) {
-            throw new Error(data.error);
-        }
-        content = data.content;
-      }
-
-      setGeneratedContent(content);
-      if (ideSettings.extension) {
-        let base = filename.substring(0, filename.lastIndexOf('.')) || "skill";
-        if (skillName) {
-            base = skillName.replace(/[^a-zA-Z0-9._-]/g, '_');
-        }
-        setFilename(`${base}${ideSettings.extension}`);
-      }
-      
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Generation failed");
+        setGeneratedContents(newContents);
+    } catch (e: any) {
+        alert(e.message);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
 
   const downloadFile = async () => {
-    if (!generatedContent) return;
+    const content = generatedContents[selectedIDE];
+    if (!content) return;
     
-    // For ZIP files (Trae), we need to ask the server to package it
+    const ideSettings = IDE_CONFIG[selectedIDE];
+    let filename = `${skillName || 'skill'}${ideSettings.extension}`;
+    filename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+    
     if (filename.endsWith('.zip')) {
         setSaving(true);
         try {
             const res = await fetch("/api/save-skill", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ filename, content: generatedContent }),
+                body: JSON.stringify({ filename, content }),
             });
             
             if (!res.ok) throw new Error("Packaging failed");
@@ -161,8 +119,7 @@ export default function GeneratorPage() {
             setSaving(false);
         }
     } else {
-        // For text files, download directly from client
-        const blob = new Blob([generatedContent], { type: 'text/plain' });
+        const blob = new Blob([content], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -176,7 +133,6 @@ export default function GeneratorPage() {
 
   return (
     <div className="min-h-screen bg-background p-8 font-sans relative overflow-hidden">
-      {/* Decorative background blobs */}
       <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-accent/5 blur-[120px] pointer-events-none" />
 
       <div className="max-w-[1400px] mx-auto space-y-8 relative z-10">
@@ -194,7 +150,6 @@ export default function GeneratorPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[calc(100vh-180px)] min-h-[600px]">
-          {/* Input Section */}
           <div className="flex flex-col gap-4 animate-apple-fade-in [animation-delay:0.1s]">
             {!hasActiveProvider && config !== null && (
               <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-center justify-between text-yellow-600 dark:text-yellow-400">
@@ -217,23 +172,8 @@ export default function GeneratorPage() {
                       {t.generator.prompt.label}
                     </label>
                   </div>
-
-                  {/* IDE Selector */}
-                  <div className="flex items-center gap-2">
-                    <Monitor className="w-4 h-4 text-muted-foreground" />
-                    <select 
-                        value={selectedIDE}
-                        onChange={(e) => setSelectedIDE(e.target.value as SupportedIDE)}
-                        className="glass-input py-1 px-3 text-sm appearance-none cursor-pointer min-w-[120px]"
-                    >
-                        {Object.entries(IDE_CONFIG).map(([key, config]) => (
-                            <option key={key} value={key}>{config.name}</option>
-                        ))}
-                    </select>
-                  </div>
               </div>
 
-              {/* Skill Name Input */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">
                   {t.generator.prompt.skillNameLabel}
@@ -256,45 +196,36 @@ export default function GeneratorPage() {
               
               <div className="pt-4 border-t border-border/50">
                 <button
-                  onClick={generate}
+                  onClick={generateAll}
                   disabled={loading || !prompt}
                   className="glass-button-primary w-full flex items-center justify-center gap-2 py-4 text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-accent/10 hover:shadow-accent/20"
                 >
                   {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                  {loading ? t.generator.prompt.generating : t.generator.prompt.button}
+                  {loading ? t.generator.prompt.generating : "Generate All"}
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Output Section */}
           <div className="flex flex-col gap-4 animate-apple-fade-in [animation-delay:0.2s]">
             <div className="glass-card flex-1 flex flex-col p-0 overflow-hidden bg-white/40 dark:bg-black/40 backdrop-blur-2xl">
-              {/* Toolbar */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-white/20 dark:bg-black/20">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Code className="w-4 h-4" />
-                  <label className="text-xs font-semibold uppercase tracking-wider">
-                    {t.generator.output.label}
-                  </label>
+                <div className="flex items-center gap-2">
+                    <Monitor className="w-4 h-4 text-muted-foreground" />
+                    <select 
+                        value={selectedIDE}
+                        onChange={(e) => setSelectedIDE(e.target.value as SupportedIDE)}
+                        className="glass-input py-1 px-3 text-sm appearance-none cursor-pointer min-w-[120px]"
+                    >
+                        {Object.entries(IDE_CONFIG).map(([key, config]) => (
+                            <option key={key} value={key}>{config.name}</option>
+                        ))}
+                    </select>
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  <div className="relative group">
-                    <Terminal className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      type="text"
-                      value={filename}
-                      onChange={(e) => setFilename(e.target.value)}
-                      className="glass-input pl-9 py-1.5 text-sm w-48 text-right font-mono bg-white/20 dark:bg-black/20 focus:bg-white/40"
-                      placeholder="filename.ts"
-                    />
-                  </div>
-                  
-                  <div className="h-6 w-px bg-border/50" />
-                  
                   <button
-                    onClick={() => navigator.clipboard.writeText(generatedContent)}
+                    onClick={() => navigator.clipboard.writeText(generatedContents[selectedIDE] || "")}
                     className="p-2 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
                     title={t.common.copy}
                   >
@@ -303,22 +234,20 @@ export default function GeneratorPage() {
                 </div>
               </div>
               
-              {/* Code Area */}
               <div className="flex-1 relative">
                 <textarea
-                  value={generatedContent}
-                  onChange={(e) => setGeneratedContent(e.target.value)}
+                  value={generatedContents[selectedIDE] || ""}
+                  readOnly
                   className="absolute inset-0 w-full h-full bg-transparent resize-none focus:outline-none font-mono text-sm leading-relaxed p-6 text-foreground/90 selection:bg-accent/20"
                   spellCheck={false}
                   placeholder={t.generator.output.placeholder}
                 />
               </div>
 
-              {/* Action Bar */}
               <div className="p-6 border-t border-border/50 bg-white/20 dark:bg-black/20 flex gap-4">
                 <button
                   onClick={downloadFile}
-                  disabled={saving || !generatedContent}
+                  disabled={saving || !generatedContents[selectedIDE]}
                   className="glass-button w-full flex-1 flex items-center justify-center gap-2 py-3 disabled:opacity-50 hover:bg-white/40 dark:hover:bg-white/10"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
